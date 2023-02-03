@@ -1,11 +1,18 @@
 import os
-import argparse
-from registering import register_all_datasets
-from detectron2.data import DatasetCatalog, MetadataCatalog
-from detectron2.structures.masks import polygons_to_bitmask
+import sys
 
-from vit_feature_extraction import ViTFeatureExtractor
-from tokencut import tokencut_bipartition
+# change working directory to project root
+os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# add project root to path
+sys.path.insert(0, os.getcwd())
+
+import argparse
+from tools_.registering import register_all_datasets
+from detectron2.data import DatasetCatalog, MetadataCatalog
+
+from tools_.vit_feature_extraction import ViTFeatureExtractor
+from tools_.tokencut import tokencut_bipartition
+from tools_.watershed import watershed_instances
 
 from detectron2.structures.masks import polygons_to_bitmask
 
@@ -18,6 +25,7 @@ import pycocotools.mask as mask_util
 from detectron2.data.datasets.coco import convert_to_coco_json
 from tqdm import tqdm
 
+import scipy.ndimage as ndimage
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -101,7 +109,6 @@ def recursive_bipartite(dino_model, img, subset_mask, out_dict, node_name, depth
     # foreground_prior = np.zeros(subset_mask.shape)
     # foreground_prior[subset_mask.numpy()] = cls_token_att_map
     # apply median filter to smooth the foreground prior
-    # import scipy.ndimage as ndimage
     # foreground_prior = ndimage.median_filter(foreground_prior, size=5)
     # plt.imshow(foreground_prior)
     # plt.show()
@@ -115,6 +122,9 @@ def recursive_bipartite(dino_model, img, subset_mask, out_dict, node_name, depth
     # print(f"percentage cls token above 0.5: {torch.sum(cls_token_att_map > 0.5)/len(cls_token_att_map)}")
     if bipartition is not None and second_smallest_vec is not None:
         foreground_segmentation, background_segmentation = foreground_background_split(bipartition, subset_mask)
+        # apply median filter to smooth the foreground segmentation
+        # foreground_segmentation = ndimage.median_filter(foreground_segmentation, size=3)
+        forg_labels_watershed = watershed_instances(foreground_segmentation)
         # plt.imshow(foreground_segmentation)
         # plt.show()
         # plt.imshow(background_segmentation)
@@ -212,9 +222,6 @@ if __name__ == "__main__":
     parser.add_argument("--output-path", type=str, default="", help="Output directory for json annotation file")
     args = parser.parse_args()
 
-    # change working directory to project root
-    os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
     register_all_datasets()
     dataset_dicts = DatasetCatalog.get(args.dataset)
 
@@ -235,7 +242,6 @@ if __name__ == "__main__":
         recursive_bipartite(dino_model, img, mask_all, out_dict, "root", 0, 5)
         instances_masks = []
         for node_name, node in out_dict.items():
-            print(node_name, node["bipartition"].shape, node["second_smallest_vec"].shape, node["subset_mask"].shape)
             instances_masks.append(node["foreground_segmentation"])
         annotations = []
         for i, mask in enumerate(instances_masks):
