@@ -41,9 +41,9 @@ class CocoClassAgnostic(RegisterableDataset):
     def thing_classes(self):
         return ['foreground']
 
-    @property
-    def thing_dataset_id_to_contiguous_id(self):
-        return {0: 0}
+    # @property
+    # def thing_dataset_id_to_contiguous_id(self):
+    #     return {1: 0}
 
 
 

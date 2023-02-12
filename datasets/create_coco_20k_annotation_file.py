@@ -1,4 +1,12 @@
 import os
+import sys
+
+# change working directory to project root
+os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# add project root to path
+sys.path.insert(0, os.getcwd())
+
+
 import argparse
 from detectron2.data.datasets.coco import load_coco_json, convert_to_coco_json
 from tqdm import tqdm
@@ -8,6 +16,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser("Create COCO 20k annotation file")
     parser.add_argument("--coco-path", type=str, default="datasets/coco")
     parser.add_argument("--output-path", type=str, default="")
+    parser.add_argument("--not-class-agnostic", action="store_true")
 
     args = parser.parse_args()
 
@@ -21,7 +30,7 @@ if __name__ == "__main__":
     coco_dataset = load_coco_json(json_file, image_root, dataset_name)
     # load coco 20k filenames
     print("Loading COCO 20K files list...")
-    with open("coco_20k_filenames.txt", "r") as f:
+    with open("datasets/coco_20k_filenames.txt", "r") as f:
         # read lines and remove newline character
         coco_20k_filenames = [line.rstrip().split('/')[-1] for line in f.readlines()]
     # filter coco 2014 train annotations that are in coco 20k
@@ -29,10 +38,17 @@ if __name__ == "__main__":
     for sample in tqdm(coco_dataset, desc="Filtering COCO_20K from COCO_2014_train"):
         image_file_name = sample["file_name"].split('/')[-1]
         if image_file_name in coco_20k_filenames:
+            if not args.not_class_agnostic:
+                for annotation in sample['annotations']:
+                    # we use 1 as the category id for foreground
+                    annotation['category_id'] = 1
             coco_20k_dataset.append(sample)
 
     # register coco 20k dataset
-    coco_20k_name = "coco_20k"
+    if args.not_class_agnostic:
+        coco_20k_name = "coco_20k"
+    else:
+        coco_20k_name = "coco_20k_CAD"
     def get_coco_20k_dicts():
         return coco_20k_dataset
     DatasetCatalog.register(coco_20k_name, get_coco_20k_dicts)
@@ -40,7 +56,7 @@ if __name__ == "__main__":
 
     # write coco 20k annotations to json file
     if args.output_path == "":
-        output_path = os.path.join(args.coco_path, "annotations/instances_coco_20k.json")
+        output_path = os.path.join(args.coco_path, f"annotations/instances_{coco_20k_name}.json")
     else:
         output_path = args.output_path
 

@@ -215,7 +215,7 @@ def plot_discovered_instances(image_file, gt_annotations, discovered_annotations
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Create pseudo labels mask coco annotation file")
-    parser.add_argument("--dataset", type=str, default="coco_20k")
+    parser.add_argument("--dataset", type=str, default="coco_20k_class_agnostic")
     parser.add_argument("--patch-size", type=int, default=16, help="Patch size for DINO", choices=[8, 16])
     parser.add_argument("--dino-vit-size", type=str, default="small", help="DINO ViT model size", choices=["small", "big"])
     parser.add_argument("--coco-path", type=str, default="datasets/coco")
@@ -271,19 +271,21 @@ if __name__ == "__main__":
             "width": sample["width"],
             "annotations": annotations
         })
+        # TODO: for debugging delete later
+        break
 
-    ## register the new pseudo labels dataset to detectron2
-    # def get_dataset_pseudo_labels_dicts_dicts():
-    #     return dataset_pseudo_labels_dicts
-    # DatasetCatalog.register(dataset_pseudo_labels_name, get_dataset_pseudo_labels_dicts_dicts)
-    # MetadataCatalog.get(dataset_pseudo_labels_name).set(thing_classes=MetadataCatalog.get(args.dataset).thing_classes)
-    #
-    # # write coco 20k annotations to json file
-    # if args.output_path == "":
-    #     output_path = os.path.join(args.coco_path, f"annotations/instances_{dataset_pseudo_labels_name}.json")
-    # else:
-    #     output_path = args.output_path
-    # print(f"Writing {dataset_pseudo_labels_name} annotations to {output_path}...")
-    # convert_to_coco_json(dataset_pseudo_labels_name, output_path)
+    # register the new pseudo labels dataset to detectron2
+    def get_dataset_pseudo_labels_dicts_dicts():
+        return dataset_pseudo_labels_dicts
+    DatasetCatalog.register(dataset_pseudo_labels_name, get_dataset_pseudo_labels_dicts_dicts)
+    MetadataCatalog.get(dataset_pseudo_labels_name).set(thing_classes=MetadataCatalog.get(args.dataset).thing_classes)
+
+    # write coco 20k annotations to json file
+    if args.output_path == "":
+        output_path = os.path.join(args.coco_path, f"annotations/instances_{dataset_pseudo_labels_name}.json")
+    else:
+        output_path = args.output_path
+    print(f"Writing {dataset_pseudo_labels_name} annotations to {output_path}...")
+    convert_to_coco_json(dataset_pseudo_labels_name, output_path)
 
     print("Done!")

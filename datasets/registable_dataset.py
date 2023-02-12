@@ -25,6 +25,6 @@ class RegisterableDataset():
     def thing_classes(self):
         return NotImplementedError
 
-    @property
-    def thing_dataset_id_to_contiguous_id(self):
-        return NotImplementedError
+    # @property
+    # def thing_dataset_id_to_contiguous_id(self):
+    #     return NotImplementedError
