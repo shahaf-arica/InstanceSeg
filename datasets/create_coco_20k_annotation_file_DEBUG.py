@@ -30,11 +30,18 @@ if __name__ == "__main__":
     coco_dataset = load_coco_json(json_file, image_root, dataset_name)
     # load coco 20k filenames
     print("Loading COCO 20K files list...")
-    with open("datasets/coco_20k_filenames.txt", "r") as f:
-        # read lines and remove newline character
-        coco_20k_filenames = [line.rstrip().split('/')[-1] for line in f.readlines()]
+    # with open("datasets/coco_20k_filenames.txt", "r") as f:
+    #     # read lines and remove newline character
+    #     coco_20k_filenames = [line.rstrip().split('/')[-1] for line in f.readlines()]
+
+    selected_images_file = "/data/home/ssaricha/TokenCut/selected_images.txt"
+    with open(selected_images_file, 'r') as filehandle:
+        coco_20k_filenames = [current_place.rstrip() for current_place in filehandle.readlines()]
+    coco_20k_filenames = ["COCO_train2014_000000000036.jpg", "COCO_train2014_000000000077.jpg"]
+
     # filter coco 2014 train annotations that are in coco 20k
     coco_20k_dataset = []
+
     for sample in tqdm(coco_dataset, desc="Filtering COCO_20K from COCO_2014_train"):
         image_file_name = sample["file_name"].split('/')[-1]
         if image_file_name in coco_20k_filenames:
@@ -46,9 +53,9 @@ if __name__ == "__main__":
 
     # register coco 20k dataset
     if args.not_class_agnostic:
-        coco_20k_name = "coco_20k"
+        coco_20k_name = "coco_20k_DEBUG"
     else:
-        coco_20k_name = "coco_20k_CAD"
+        coco_20k_name = "coco_20k_CAD_DEBUG"
     def get_coco_20k_dicts():
         return coco_20k_dataset
     DatasetCatalog.register(coco_20k_name, get_coco_20k_dicts)

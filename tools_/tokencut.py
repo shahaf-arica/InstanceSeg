@@ -24,15 +24,21 @@ def ncut(A, tau=0.0, eps=1e-5, no_binary_graph=True, eig_vecs=8):
 
     return eigenvectors, eigenvalues
 
-
-def tokencut_bipartition(features_1, features_2, tau=0.2, no_binary_graph=True):
+def tokencut(features_1, features_2, tau=0.2, no_binary_graph=True, eig_vecs=2):
     features_1 = features_1[0, 1:, :]
     features_2 = features_2[0, 1:, :]
     features_1 = F.normalize(features_1, p=2)
     features_2 = F.normalize(features_2, p=2)
     A = (features_1 @ features_2.transpose(1, 0))
 
-    eigenvectors, eigenvalues = ncut(A, tau=tau, no_binary_graph=no_binary_graph, eig_vecs=2)
+    eigenvectors, eigenvalues = ncut(A, tau=tau, no_binary_graph=no_binary_graph, eig_vecs=eig_vecs)
+
+    return eigenvectors, eigenvalues
+
+
+def tokencut_bipartition(features_1, features_2, tau=0.2, no_binary_graph=True):
+
+    eigenvectors, eigenvalues = tokencut_bipartition(features_1, features_2, tau=tau, no_binary_graph=no_binary_graph)
 
     if eigenvectors is None or eigenvalues is None:
         return None, None
